@@ -53,7 +53,7 @@ class SettingsFragment : Fragment() {
     private fun saveSettings() {
         val json: JSONObject? = getJsonData()
         if (json != null) {
-            connectToWPAWiFi("test", "testa")
+            connectToWPAWiFi("test", "test")
         }
     }
 
