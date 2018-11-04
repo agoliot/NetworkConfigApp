@@ -1,11 +1,8 @@
 package goliot.fr.networkconfig
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.net.NetworkInfo
+import android.content.SharedPreferences
 import android.net.wifi.WifiConfiguration
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -18,11 +15,11 @@ import android.widget.Toast
 import kotlinx.android.synthetic.main.fragment_settings.*
 import org.json.JSONException
 import org.json.JSONObject
-import org.xml.sax.Parser
 
 class SettingsFragment : Fragment() {
 
     val TAG: String = "SettingsFragment"
+    val arrayApps: Array<String> = arrayOf("goliot.fr.networkconfigappdata")
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -45,7 +42,6 @@ class SettingsFragment : Fragment() {
             json = JSONObject(text_data.text.toString())
         } catch (ex: JSONException) {
             Toast.makeText(context, "le contenu n'est pas un json valide !", Toast.LENGTH_SHORT).show()
-
         }
         return json
     }
@@ -53,7 +49,35 @@ class SettingsFragment : Fragment() {
     private fun saveSettings() {
         val json: JSONObject? = getJsonData()
         if (json != null) {
-            connectToWPAWiFi("test", "test")
+            val data: JSONObject? = json.optJSONObject("data")
+            if (data != null) {
+                shareData(data)
+            }
+            val networkInfo: JSONObject? = json.optJSONObject("network")
+            if (networkInfo != null) {
+                val ssid: String = networkInfo.optString("ssid")
+                val pass: String = networkInfo.optString("pass")
+                if (ssid.isNotEmpty() && pass.isNotEmpty()) {
+                    connectToWPAWiFi(ssid, pass)
+                }
+            }
+
+        }
+    }
+
+    private fun shareData(data: JSONObject) {
+        arrayApps.forEach {
+            val mContext: Context = context!!.createPackageContext(
+                    it,
+                    Context.MODE_PRIVATE)
+
+            val filePreferences: String = data.optString("preferences", "DefaultPref")
+            val pref: SharedPreferences = mContext.getSharedPreferences(filePreferences, Context.MODE_PRIVATE)
+            val editor: SharedPreferences.Editor = pref.edit()
+            for (key: String in data.keys()) {
+                editor.putString(key, data.getString(key))
+            }
+            editor.apply()
         }
     }
 
